@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>SHY此生必打卡餐厅</title>
+<meta name="app-build" content="2026-10-28a">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF8A90">
+<!-- iOS 添加到主屏幕 -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="打卡餐厅">
+<!-- Android 添加到主屏幕（favicon.ico 放最前：多数国产浏览器（一加/OPPO 自带浏览器）优先抓它当快捷方式图标 -->
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: #FAFAFA;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: #1A1A1A;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* ===== 启动 Splash（全屏纯文字） ===== */
+  .splash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+  }
+  .splash.hide { opacity: 0; pointer-events: none; }
+  .splash .splash-text {
+    font-size: 30px;
+    font-weight: 700;
+    color: #FF8A90;
+    letter-spacing: 3px;
+    text-align: center;
+    white-space: pre-line;
+    text-shadow: 0 2px 8px rgba(255,138,144,0.12);
+    padding: 0 24px;
+    line-height: 1.5;
+  }
+
+  /* ===== 顶部导航 ===== */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 50px;
+    background: #fff;
+    border-bottom: 1px solid #F0F0F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    z-index: 100;
+  }
+  .topbar .icon-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    color: #555;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 50%;
+    position: absolute;
+    left: 12px;
+  }
+  .topbar .icon-btn:active { background: #F5F5F5; }
+  .topbar .title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #1A1A1A;
+    white-space: nowrap;
+  }
+
+  /* ===== 模式切换 — 卡片右上 ===== */
+  .mode-toggle {
+    position: fixed;
+    top: 58px;
+    right: 12px;
+    z-index: 95;
+    display: flex;
+    background: rgba(255,255,255,0.95);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    border: 1px solid #F0F0F0;
+  }
+  .mode-toggle .mode-btn {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    color: #999;
+    border: none;
+    outline: none;
+    white-space: nowrap;
+    background: transparent;
+  }
+  .mode-toggle .mode-btn.active {
+    background: #FF4458;
+    color: #fff;
+  }
+
+  /* ===== 分类目录触发器 — 卡片左上 ===== */
+  .cat-trigger {
+    position: fixed;
+    top: 100px;
+    left: 12px;
+    z-index: 96;
+    width: 22px;
+    padding: 5px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64B5F6;
+    background: #fff;
+    border-radius: 8px;
+    text-align: center;
+    line-height: 1.35;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #E8E8E8;
+    letter-spacing: 0;
+  }
+  /* ===== 分类弹出面板 ===== */
+  .cat-panel {
+    position: fixed;
+    top: 98px;
+    left: 40px;
+    z-index: 95;
+    display: none;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 4px 8px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 1px solid #E8E8E8;
+    max-width: calc(100vw - 54px);
+    transition: opacity 0.15s ease;
+  }
+  .cat-panel.show { display: flex; }
+  .cat-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 2px;
+    cursor: pointer;
+    color: #64B5F6;
+    border: none;
+    background: transparent;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .cat-tag.active { color: #1976D2; }
+  .cat-sep {
+    color: #BBDEFB;
+    font-size: 10px;
+    padding: 0 1px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ===== 主舞台 ===== */
+  .stage {
+    position: absolute;
+    top: 50px;
+    left: 0; right: 0;
+    bottom: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 16px;
+  }
+  .stage.full { bottom: 0; }
+
+  .card-wrapper {
+    width: 100%;
+    max-width: 360px;
+    height: 55vh;
+    max-height: min(520px, calc(100% - 38px));   /* 仅让出矮评论条的空间 */
+    min-height: 340px;          /* 恢复原始最小高度 */
+    flex: 0 1 auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ===== 卡片 ===== */
+  .card {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: #FFF5F6;
+    box-shadow: 0 4px 20px rgba(255,68,88,0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    opacity: 1;
+    cursor: grab;
+    border: 1px solid #FFE8EA;
+  }
+  .card.hidden { opacity: 0; transform: scale(0.95); pointer-events: none; }
+  .card.swiping { transition: none; cursor: grabbing; }
+  .card.no-card { display: none; }
+
+  /* ===== 类目卡片 ===== */
+  .card-category {
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    background: #FFF5F6 !important;
+    border: 2px solid #FFE0E3;
+  }
+  .cat-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+  }
+  .cat-emoji {
+    font-size: 80px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 8px rgba(255,68,88,0.12));
+  }
+  .cat-name {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #FF4458;
+  }
+  .cat-desc {
+    font-size: 13px;
+    color: #996666;
+    line-height: 1.6;
+    text-align: center;
+    max-width: 220px;
+  }
+  .cat-count {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #CC8888;
+    letter-spacing: 1px;
+  }
+
+  /* ===== 餐厅卡片 ===== */
+  .card-restaurant {
+    overflow: hidden;
+    gap: 0;
+    background: #FFF5F6;
+  }
+  .shop-photo {
+    width: 100%;
+    height: 45%;
+    min-height: 140px;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+  }
+  /* 彩蛋卡：整卡只有一张图 */
+  .card-egg { padding: 0; background: #FFF5F6; }
+  .card-egg .egg-photo {
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+  }
+  .shop-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    background: #FFF5F6;
+  }
+  .shop-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .shop-name {
+    font-size: 19px;
+    font-weight: 800;
+    color: #1A1A1A;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .shop-name .branch { font-size: 12px; font-weight: 500; color: #AAA; }
+  .shop-name .tag {
+    font-size: 10px; font-weight: 600; color: #fff;
+    padding: 2px 8px; border-radius: 8px; white-space: nowrap;
+  }
+  .shop-price {
+    font-size: 17px; font-weight: 700; color: #FF4458;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .shop-price span { font-size: 11px; font-weight: 400; color: #AAA; }
+  .shop-recommender { font-size: 12px; color: #999; display: flex; align-items: center; gap: 5px; }
+  .shop-recommender .avt {
+    width: 20px; height: 20px; border-radius: 50%; background: #FF4458;
+    color: #fff; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+  }
+  .shop-rating { font-size: 12px; color: #FF9800; letter-spacing: 2px; margin-top: 2px; }
+  .shop-features { display: flex; flex-wrap: wrap; gap: 5px; }
+  .shop-feat {
+    font-size: 11px; color: #1E88E5; background: #E3F2FD;
+    padding: 2px 8px; border-radius: 10px;
+  }
+  .shop-addr { font-size: 12px; color: #AAA; line-height: 1.5; }
+  .shop-dishes {
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .dish {
+    font-size: 12px; padding: 3px 9px; border-radius: 12px;
+    background: #F5F5F5; color: #888;
+  }
+  .dish.hot { background: #E3F2FD; color: #1565C0; font-weight: 600; }
+  .shop-meta {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 12px; color: #888; flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .shop-meta .recdish-icon { font-size: 13px; flex-shrink: 0; }
+  .shop-meta .recdish-label { color: #FF4458; font-weight: 600; }
+  .shop-meta .meta-sep { color: #DDD; }
+  .shop-meta .dy-icon { font-size: 13px; color: #FE2C55; flex-shrink: 0; }
+  .shop-meta .dy-score { color: #FE2C55; font-weight: 700; }
+  .shop-meta .dp-icon { font-size: 13px; color: #FF9800; flex-shrink: 0; }
+  .shop-meta .dp-score { color: #FF6B00; font-weight: 700; }
+
+  .tag-blue   { background: #039BE5 !important; }
+  .tag-red    { background: #FF6B6B !important; }
+  .tag-orange { background: #FF9800 !important; }
+  .tag-cyan   { background: #00ACC1 !important; }
+  .tag-green  { background: #43A047 !important; }
+
+  /* ===== 提示语 ===== */
+  .toast {
+    position: absolute;
+    top: -38px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px; font-weight: 700;
+    color: #FF4458;
+    opacity: 0;
+    transition: opacity 0.4s;
+    white-space: nowrap;
+    z-index: 10; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ===== 底部操作栏（心仪版） ===== */
+  .actions {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 88px;
+    background: #fff;
+    border-top: 1px solid #F0F0F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 14px;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 100;
+    transition: opacity 0.3s;
+  }
+  .actions.hidden { opacity: 0; pointer-events: none; }
+
+  /* ===== 评论条 ===== */
+  /* 卡片 + 评论条的纵向容器，整体在舞台里居中 */
+  .stage-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;                /* 关键：宽度撑满，避免被窄评论条带收缩 */
+    max-width: 360px;           /* 与卡片同宽，卡片尺寸保持原样 */
+    max-height: 100%;
+    min-height: 0;
+  }
+  /* 随心版：全程不展示评论区与弹幕轨道 */
+  .stage.suixin .cmt-bar,
+  .stage.suixin .danmu-track { display: none; }
+  /* 评论条：紧贴卡片下方，窄条居中；未出现评论时不占布局 */
+  .cmt-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 180px;              /* 原为通栏，现收窄一半 */
+    align-self: flex-start;    /* 靠左对齐卡片左边缘 */
+    margin-left: 4px;          /* 与卡片左侧略微内收 */
+    flex-shrink: 0;
+    height: 30px;              /* 高度压低 */
+    padding: 0 4px 0 12px;
+    box-sizing: border-box;
+    background: #FFF5F6;
+    border: 1px solid #FFE0E3;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(255,68,88,0.06);
+  }
+  .cmt-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: #7A5555;
+    font-family: inherit;
+  }
+  .cmt-input::placeholder { color: #D8AAAA; }
+  .cmt-send {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #FF8A90;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.12s, opacity 0.2s;
+  }
+  .cmt-send:active { transform: scale(0.88); opacity: 0.75; }
+  .cmt-send:active { transform: scale(0.92); }
+  .cmt-send:disabled { opacity: 0.45; }
+
+  /* ===== 弹幕轨道：3 行并行，随机分配 ===== */
+  .danmu-track {
+    position: absolute;
+    left: 0; right: 0; bottom: 40px;   /* 抬到评论条之上，不遮挡输入框 */
+    height: 54px;                      /* 3 行 × 18px */
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 60;
+  }
+  .danmu-item {
+    position: absolute;
+    top: 0;                            /* 具体行号由 JS 写 inline top 决定 */
+    left: 100%;
+    white-space: nowrap;
+    font-size: 10px;           /* 原 14px，按需求缩小 */
+    font-weight: 500;
+    color: #FF4458;
+    background: rgba(255,255,255,0.88);
+    border: 1px solid #FFE0E3;
+    border-radius: 9px;
+    padding: 2px 8px;
+    box-shadow: 0 2px 8px rgba(255,68,88,0.10);
+    animation: danmuMove linear forwards;
+  }
+  @keyframes danmuMove {
+    to { transform: translateX(calc(-100vw - 100%)); }
+  }
+
+  .action-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(255,68,88,0.08);
+    border: 1px solid #FFE0E3;
+    font-size: 22px;
+    transition: transform 0.12s;
+    color: #FF4458;
+  }
+  .action-btn:active { transform: scale(0.9); }
+
+  /* ===== 骰子按钮 ===== */
+  .dice-btn {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 110;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    width: auto;
+    padding: 22px 48px;
+    border-radius: 36px;
+    background: #fff;
+    border: 2px solid #FFE0E3;
+    box-shadow: 0 6px 28px rgba(255,68,88,0.12);
+    font-size: 22px;
+    font-weight: 700;
+    color: #FF4458;
+    letter-spacing: 2px;
+    transition: all 0.4s ease;
+  }
+  .dice-btn.show { display: flex; }
+  .dice-btn:active { transform: translate(-50%, -50%) scale(0.92); }
+  .dice-btn .dice-icon { font-size: 36px; line-height: 1; }
+
+  /* 骰子下移 */
+  .dice-btn.below {
+    top: auto;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 18px 40px;
+    font-size: 18px;
+    border-radius: 30px;
+    box-shadow: 0 4px 18px rgba(255,68,88,0.08);
+  }
+  .dice-btn.below .dice-icon { font-size: 28px; }
+  .dice-btn.below:active { transform: translateX(-50%) scale(0.92); }
+</style>
+</head>
+<body>
+
+<!-- Splash 全屏纯文字 -->
+<div class="splash" id="splash">
+  <div class="splash-text" id="splashText"></div>
+</div>
+
+<!-- 顶部导航 -->
+<div class="topbar">
+  <div class="icon-btn" id="menuBtn">☰</div>
+  <div class="title">SHY此生必打卡餐厅</div>
+</div>
+
+<!-- 模式切换 — 卡片右上 -->
+<div class="mode-toggle" id="modeToggle">
+  <button class="mode-btn active" data-mode="xinyi">心仪版</button>
+  <button class="mode-btn" data-mode="suixin">随心版</button>
+</div>
+
+<!-- 分类目录触发器 — 卡片左上 -->
+<div class="cat-trigger" id="catTrigger">目<br>录</div>
+<div class="cat-panel" id="catPanel"></div>
+
+<!-- 卡片舞台 -->
+<div class="stage" id="stage">
+  <div class="stage-inner">
+    <div class="card-wrapper" id="wrapper">
+      <div class="card" id="card"></div>
+      <div class="toast" id="toast"></div>
+    </div>
+    <!-- 评论条：紧贴卡片下方，窄条居中 -->
+    <div class="cmt-bar" id="cmtBar">
+      <input class="cmt-input" id="cmtInput" maxlength="60" placeholder="说点什么…" autocomplete="off">
+      <button class="cmt-send" id="cmtSend" title="发射">↑</button>
+    </div>
+  </div>
+  <!-- 弹幕轨道：卡片下方外围，从右向左飘 -->
+  <div class="danmu-track" id="danmuTrack"></div>
+</div>
+
+<!-- 骰子按钮 -->
+<div class="dice-btn" id="diceBtn">
+  <span class="dice-icon">🎲</span> 随 机
+</div>
+
+<!-- 底部操作栏（心仪版）：仅导航按钮，彩蛋页隐藏 -->
+<div class="actions" id="actionsBar">
+  <div class="action-btn" id="btnNav">📍</div>
+</div>
+
+<script>
+// ===================== 数据 =====================
+const slides = [
+  { type:'category', icon:'🦐', name:'海鲜', desc:'新鲜直达 原汁原味<br>金桥商圈品质之选', count:'1家店' },
+  { type:'restaurant', icon:'🦐', name:'威海小海鲜', branch:'金高路店', tag:'海鲜', tagClass:'tag-blue',
+    photo:'images/shop_1.jpg',
+    price:123, recommender:'联名推荐', avatar:'联', douyin:'4.8', dianping:'4.3',
+    addr:'浦东新区金高路2107号（金桥商圈）',
+    mapQuery:'浦东新区金高路2107号威海小海鲜',
+    features:['新鲜直达','家庭聚餐','性价比高'],
+    rating:5,
+    dishes:[
+      {name:'鸟贝',icon:'🐚',hl:1},{name:'清蒸海鲜（招牌）',icon:'🦐',hl:1},{name:'凉拌海肠',icon:'🥒',hl:1},
+      {name:'舌头鱼',icon:'🐟'},{name:'白灼虾',icon:'🦐'},{name:'辣炒蛤蜊',icon:'🌶️'},{name:'海鲜拼盘',icon:'🦀'}
+    ]
+  },
+  { type:'category', icon:'🍲', name:'东北', desc:'锅气十足 量大管饱<br>凌河路·上川路一带', count:'3家店' },
+  { type:'restaurant', icon:'🍲', name:'龙江顺天福', branch:'金桥店', tag:'东北菜', tagClass:'tag-red',
+    photo:'images/shop_2.jpg',
+    price:80, recommender:'申小红', avatar:'申', douyin:'4.7', dianping:'4.5',
+    addr:'浦东凌河路（丰华高中东北侧）🚇12号线杨高北路',
+    mapQuery:'龙江顺天福东北菜凌河路店',
+    features:['09:30-24:00','东北地名包厢'],
+    rating:5,
+    dishes:[
+      {name:'锅包肉 ¥38',icon:'🥩',hl:1},{name:'小鸡炖蘑菇 ¥58',icon:'🍄'},{name:'猪肉炖粉条 ¥52',icon:'🍜'},
+      {name:'韭菜盒子 ¥26',icon:'🥟'},{name:'地三鲜 ¥24',icon:'🥔'},{name:'鹅肉蒸饺',icon:'🥟',hl:1}
+    ]
+  },
+  { type:'restaurant', icon:'🥘', name:'地锅岁月', branch:'凌河路店', tag:'东北菜', tagClass:'tag-red',
+    photo:'images/shop_3.jpg',
+    price:91, recommender:'申小红', avatar:'申', douyin:'4.9',
+    addr:'浦东新区凌河路576号',
+    mapQuery:'浦东新区凌河路576号地锅岁月',
+    features:['无预制菜','现点现烧','上海地方菜好评榜'],
+    rating:5,
+    dishes:[
+      {name:'地锅鸡（招牌）',icon:'🐔',hl:1},{name:'啤酒鸡排骨双人餐 ¥99',icon:'🍺',hl:1},{name:'贴饼子',icon:'🫓'},
+      {name:'+牛蛙',icon:'🐸'},{name:'+牛肚',icon:'🐂'},{name:'+牛肉',icon:'🥩'}
+    ]
+  },
+  { type:'restaurant', icon:'🔥', name:'薛记·传奇大锅台', branch:'上川路店', tag:'东北菜', tagClass:'tag-red',
+    photo:'images/shop_4.jpg',
+    price:106, recommender:'四五六七八次', avatar:'四', douyin:'4.8', dianping:'4.2',
+    addr:'浦东新区曹路镇上川路2257号',
+    mapQuery:'浦东新区曹路镇上川路2257号传奇大锅台',
+    features:['10:00-02:00','现场选肉现炒','9店连锁'],
+    rating:5,
+    dishes:[
+      {name:'招牌地锅鸡（现炒）',icon:'🐔',hl:1},{name:'地锅鸡双人餐 ¥99',icon:'🍗',hl:1},{name:'排骨锅',icon:'🍖'},{name:'贴饼子',icon:'🫓'}
+    ]
+  },
+  { type:'category', icon:'🐂', name:'火锅', desc:'牛骨慢熬 原汤醇厚<br>张江街边烟火小馆', count:'3家店' },
+  { type:'restaurant', icon:'🐂', name:'大成牛肉汤馆', branch:'张江店', tag:'牛肉汤', tagClass:'tag-cyan',
+    photo:'images/shop_5.jpg',
+    price:65, recommender:'申小红', avatar:'申', dianping:'4.4',
+    addr:'浦东新区张江镇高斯路1134号',
+    mapQuery:'浦东新区张江镇高斯路1134号大成牛肉汤馆',
+    features:['牛骨慢熬原汤','街边烟火小店','价格实惠'],
+    rating:5,
+    dishes:[
+      {name:'牛骨原汤（招牌）',icon:'🍖',hl:1},{name:'牛肋排锅（灵魂）',icon:'🥩',hl:1},{name:'牛肉丸',icon:'🧆'},{name:'锅贴',icon:'🥟'},{name:'烧饼',icon:'🫓'}
+    ]
+  },
+  { type:'restaurant', icon:'🍲', name:'大宝口福·牛羊肉火锅', branch:'张江店', tag:'火锅', tagClass:'tag-orange',
+    photo:'images/shop_7.jpg',
+    price:109, recommender:'申小鸿', avatar:'申', dianping:'4.8',
+    addr:'浦东新区祖冲之路2305号1楼（天之骄子生活新天地）',
+    mapQuery:'浦东新区祖冲之路2305号大宝口福牛羊肉火锅',
+    features:['牛羊肉锅','秘制羊棒骨','龙虾烧烤'],
+    rating:5,
+    dishes:[
+      {name:'牛羊肉锅（招牌）',icon:'🥘',hl:1},{name:'秘制羊棒骨',icon:'🍖',hl:1},{name:'蒜蓉小龙虾',icon:'🦞',hl:1},{name:'羊肉串',icon:'🍢'},{name:'烧饼',icon:'🫓'}
+    ]
+  },
+  { type:'restaurant', icon:'🍢', name:'小胡同铜锅涮肉', branch:'佳林路店', tag:'老北京涮肉', tagClass:'tag-cyan',
+    photo:'images/shop_25.jpg',
+    price:90, recommender:'Ln', avatar:'L', dianping:'4.4',
+    addr:'浦东新区金桥镇佳林路96号1层（近金桥太茂）',
+    mapQuery:'浦东新区佳林路96号小胡同铜锅涮肉',
+    features:['11:00-02:00','铜锅涮肉','深夜营业'],
+    rating:4,
+    dishes:[
+      {name:'手切羊肉（招牌）',icon:'🐑',hl:1},{name:'特色羊蝎子',icon:'🦴',hl:1},{name:'澳洲双层肥牛',icon:'🥩'},{name:'胡同羊肉串',icon:'🍢'},{name:'传统清水锅',icon:'🍲'}
+    ]
+  },
+  { type:'category', icon:'🍳', name:'家常', desc:'曹路米其林 大学食堂<br>民雪路烟火小馆', count:'3家店' },
+  { type:'restaurant', icon:'🍳', name:'鸿运餐厅', branch:'民雪路店', tag:'家常菜', tagClass:'tag-green',
+    photo:'images/shop_6.jpg',
+    price:71, recommender:'申小鸿', avatar:'申', dianping:'4.0',
+    addr:'浦东新区民雪路96号（曹路大学城）',
+    mapQuery:'浦东新区民雪路96号鸿运餐厅',
+    features:['大学生食堂','曹路米其林','价格实惠'],
+    rating:3.5,
+    dishes:[
+      {name:'沙律牛排（招牌）',icon:'🥩',hl:1},{name:'咸蛋黄鸡翅',icon:'🍗',hl:1},{name:'排条双拼',icon:'🍖'},{name:'玉米烙',icon:'🌽'},{name:'咸肉菜饭',icon:'🍚'}
+    ]
+  },
+  { type:'restaurant', icon:'🥘', name:'皖豫土菜馆', branch:'月新北路店', tag:'土菜', tagClass:'tag-orange',
+    photo:'images/shop_21.jpg',
+    price:60, recommender:'Ps', avatar:'P', dianping:'4.1',
+    addr:'宝山区月浦镇段泾村月新北路66号',
+    mapQuery:'宝山区月浦镇月新北路66号皖豫土菜馆',
+    features:['10:00-13:00 16:00-20:30','皖豫土菜','汤鲜味浓'],
+    rating:4,
+    dishes:[
+      {name:'昂刺鱼豆腐汤（招牌）',icon:'🐟',hl:1},{name:'红烧土公鸡',icon:'🐔',hl:1},{name:'红烧甲鱼',icon:'🐢'}
+    ]
+  },
+  { type:'restaurant', icon:'🌶️', name:'江西小炒', branch:'民耀路店', tag:'江西小炒', tagClass:'tag-red',
+    photo:'images/shop_27.jpg',
+    price:38, recommender:'申小红', avatar:'申', dianping:'4.0',
+    addr:'浦东新区曹路镇民耀路374号-4-2户',
+    mapQuery:'浦东新区民耀路374号江西小炒',
+    features:['现炒锅气','辣度可选','价格实惠'],
+    rating:4.5,
+    dishes:[
+      {name:'小炒牛肉（招牌）',icon:'🥩',hl:1},{name:'农家一碗香',icon:'🍳',hl:1},{name:'野山笋炒腊肉',icon:'🥓'},{name:'芋子滑牛肉',icon:'🍲'},{name:'肉末茄子',icon:'🍆'}
+    ]
+  },
+  { type:'category', icon:'🍢', name:'烧烤', desc:'炭火直烤 东北风味<br>油边王串大味足', count:'1家店' },
+  { type:'restaurant', icon:'🍢', name:'沪上油边王', branch:'浦东店', tag:'烧烤', tagClass:'tag-orange',
+    photo:'images/shop_14.jpg',
+    price:86, recommender:'申小鸿', avatar:'申', dianping:'4.3',
+    addr:'浦东新区川沙新镇川图路300号3栋102室',
+    mapQuery:'浦东新区川图路300号沪上油边王',
+    features:['17:00-02:00','东北烧烤'],
+    rating:4,
+    dishes:[
+      {name:'油边王（招牌）',icon:'🍖',hl:1},{name:'牛宫后',icon:'🥩',hl:1},{name:'羊排串',icon:'🍢'},{name:'鸡中翅',icon:'鸡翅'},{name:'免费生菜卷',icon:'🥬'}
+    ]
+  },
+  { type:'category', icon:'<img src="images/cat_yirenshi.png" style="width:90px;height:90px;object-fit:contain;border-radius:12px">', name:'一人食', desc:'快捷实惠 一个人也精彩<br>面食快餐小馆', count:'14家店' },
+  { type:'restaurant', icon:'🫓', name:'河间驴肉火烧', branch:'胜利路店', tag:'快餐', tagClass:'tag-cyan',
+    photo:'images/shop_8.jpg',
+    price:29, recommender:'申小红', avatar:'申', dianping:'4.3',
+    addr:'浦东新区胜利路938号',
+    mapQuery:'浦东新区胜利路938号河间驴肉火烧',
+    features:['09:00-24:00','驴肉现做','河间风味'],
+    rating:3.5,
+    dishes:[
+      {name:'纯肉火烧（招牌）',icon:'🫓',hl:1},{name:'焖子肉火烧',icon:'🫓',hl:1},{name:'驴肉蒸饺',icon:'🥟'},{name:'驴肉汤',icon:'🍲'},{name:'凉拌驴肉',icon:'🥒'}
+    ]
+  },
+  { type:'restaurant', icon:'🍜', name:'河南林佳红烧牛肉面', branch:'芳草路店', tag:'面食', tagClass:'tag-orange',
+    photo:'images/shop_9.jpg',
+    price:27, recommender:'申小红', avatar:'申', dianping:'4.5',
+    addr:'浦东新区芳草路112号芳佳苑底商',
+    mapQuery:'浦东新区芳草路112号河南林佳红烧牛肉面',
+    features:['24小时营业','老店搬迁','价格实惠'],
+    rating:4.5,
+    dishes:[
+      {name:'红烧牛肉面（招牌）',icon:'🍜',hl:1},{name:'羊肉烩面',icon:'🍲',hl:1},{name:'牛肉拌面',icon:'🍜'},{name:'凉拌牛羊杂',icon:'🥩'},{name:'葱油千层饼',icon:'🫓'}
+    ]
+  },
+  { type:'restaurant', icon:'🍞', name:'小美满', branch:'曹路店', tag:'融合菜', tagClass:'tag-blue',
+    photo:'images/shop_10.jpg',
+    price:60, recommender:'申小鸿', avatar:'申', dianping:'4.3',
+    addr:'浦东新区曹路镇永丰村龚丰路661号',
+    mapQuery:'浦东新区曹路镇龚丰路661号小美满',
+    features:['休闲约会','网红打卡','免费停车'],
+    rating:3.5,
+    dishes:[
+      {name:'手工石窑面包（招牌）',icon:'🍞',hl:1},{name:'阿根廷烤肉',icon:'🥩',hl:1},{name:'云南过桥米线',icon:'🍜'},{name:'鸡汤米线九宫格',icon:'🍱'}
+    ]
+  },
+  { type:'restaurant', icon:'🍜', name:'华仔传统螺蛳粉', branch:'曹路店', tag:'螺蛳粉', tagClass:'tag-red',
+    photo:'images/shop_11.jpg',
+    price:23, recommender:'申小红', avatar:'申', dianping:'4.3',
+    addr:'浦东新区曹路镇民耀路445号',
+    mapQuery:'浦东新区曹路镇民耀路445号华仔传统螺蛳粉',
+    features:['11:00-22:00','螺蛳粉专营','辣酱自选'],
+    rating:4,
+    dishes:[
+      {name:'原味螺蛳粉（招牌）',icon:'🍜',hl:1},{name:'酸笋',icon:'🥒'},{name:'油果',icon:'🍟'},{name:'酸豆角',icon:'🫘'},{name:'泡椒辣酱',icon:'🌶️'}
+    ]
+  },
+  { type:'restaurant', icon:'🍜', name:'沪尚秦川·陕西手工面', branch:'藿香路店', tag:'面食', tagClass:'tag-orange',
+    photo:'images/shop_12.jpg',
+    price:32, recommender:'申小红', avatar:'申', dianping:'4.3',
+    addr:'浦东新区张江镇藿香路188号1楼109室',
+    mapQuery:'浦东新区藿香路188号沪尚秦川陕西手工面',
+    features:['10:30-21:30','手工面食','陕西风味'],
+    rating:4,
+    dishes:[
+      {name:'油泼面（招牌）',icon:'🍜',hl:1},{name:'臊子面',icon:'🍜'},{name:'biángbiáng面',icon:'🍜',hl:1},{name:'肉夹馍',icon:'🥙'},{name:'凉皮',icon:'🌶️'}
+    ]
+  },
+  { type:'restaurant', icon:'🌶️', name:'胖冬瓜·浏阳菜馆', branch:'张江首店', tag:'湘菜', tagClass:'tag-red',
+    photo:'images/shop_13.jpg',
+    price:53, recommender:'申小鸿', avatar:'申', dianping:'4.1',
+    addr:'浦东新区张江镇荣科路280-282号翡翠荟盒1层107号',
+    mapQuery:'浦东新区张江镇荣科路280号胖冬瓜浏阳菜馆',
+    features:['现炒热菜','湘菜下饭','性价比高'],
+    rating:3,
+    dishes:[
+      {name:'浏阳炒饭（招牌）',icon:'🍚',hl:1},{name:'香煎金钱蛋',icon:'🥚',hl:1},{name:'辣椒炒肉',icon:'🌶️'},{name:'剁椒鱼头',icon:'🐟'},{name:'招牌胖冬瓜',icon:'冬瓜'}
+    ]
+  },
+  { type:'restaurant', icon:'🍜', name:'七姑娘大刀凉皮', branch:'科苑路店', tag:'凉皮', tagClass:'tag-cyan',
+    photo:'images/shop_15.jpg',
+    price:17, recommender:'kaaaa', avatar:'k', dianping:'4.3',
+    addr:'浦东新区张江镇科苑路1131号（罗森便利店旁）',
+    mapQuery:'浦东新区科苑路1131号七姑娘大刀凉皮',
+    features:['08:30-22:00','凉皮现做','陕西风味'],
+    rating:5,
+    dishes:[
+      {name:'大刀凉皮（招牌）',icon:'🍜',hl:1},{name:'凉皮牛筋面双拼',icon:'🍜',hl:1},{name:'热干面',icon:'🍜'},{name:'麻酱拌面',icon:'🍝'},{name:'馄饨',icon:'🥟'}
+    ]
+  },
+  { type:'restaurant', icon:'🍜', name:'金强牛肉面', branch:'虹梅路店', tag:'兰州牛肉面', tagClass:'tag-cyan',
+    photo:'images/shop_16.jpg',
+    price:37, recommender:'TangT', avatar:'T', dianping:'4.5',
+    addr:'闵行区虹桥镇虹梅路2988-2号',
+    mapQuery:'虹桥镇虹梅路2988-2号金强牛肉面',
+    features:['24小时营业','兰州牛肉面','牛肉酱香'],
+    rating:4.5,
+    dishes:[
+      {name:'金强牛肉面（招牌）',icon:'🍜',hl:1},{name:'金强牛腱面',icon:'🥩',hl:1},{name:'二细拌面',icon:'🍜'},{name:'荷包蛋',icon:'🥚'},{name:'泡萝卜',icon:'🥕'}
+    ]
+  },
+  { type:'restaurant', icon:'🍜', name:'西安手工面', branch:'顾唐路店', tag:'陕西手工面', tagClass:'tag-cyan',
+    photo:'images/shop_17.jpg',
+    price:23, recommender:'TangT', avatar:'T', dianping:'3.6',
+    addr:'浦东新区顾唐路308号',
+    mapQuery:'顾唐路308号西安手工面',
+    features:['09:00-20:00','手工面食','陕西风味'],
+    rating:4,
+    dishes:[
+      {name:'油泼面（招牌）',icon:'🍜',hl:1},{name:'Biangbiang面',icon:'🍜',hl:1},{name:'蛋炒麻食',icon:'🥚'},{name:'臊子面',icon:'🍜'},{name:'凉皮',icon:'🥢'}
+    ]
+  },
+  { type:'restaurant', icon:'🥣', name:'黄记猪杂粥觅味馆', branch:'张江店', tag:'潮汕砂锅粥', tagClass:'tag-cyan',
+    photo:'images/shop_18.jpg',
+    price:78, recommender:'Nin', avatar:'N', dianping:'4.2',
+    addr:'浦东新区张江镇青桐路718号一层-3',
+    mapQuery:'浦东新区张江镇青桐路718号黄记猪杂粥觅味馆',
+    features:['11:00-24:00','猪杂现切','潮汕风味'],
+    rating:4,
+    dishes:[
+      {name:'招牌猪杂粥（招牌）',icon:'🥣',hl:1},{name:'白灼肠粉',icon:'🍜',hl:1},{name:'潮汕虾饼',icon:'🦐'},{name:'蒜香排骨',icon:'🍖'},{name:'脆皮大肠',icon:'🍢'}
+    ]
+  },
+  { type:'restaurant', icon:'🍲', name:'郑阿公顺德鸡煲', branch:'长泰广场店', tag:'顺德鸡煲', tagClass:'tag-orange',
+    photo:'images/shop_22.jpg',
+    price:57, recommender:'小火龙', avatar:'火', dianping:'4.4',
+    addr:'浦东新区张江镇金科路地铁站4号口长泰广场10座B1层',
+    mapQuery:'浦东新区金科路2889弄长泰广场10座B1层郑阿公顺德鸡煲',
+    features:['10:00-22:00','顺德风味','无预制菜'],
+    rating:4.5,
+    dishes:[
+      {name:'顺德鸡煲（招牌）',icon:'🍲',hl:1},{name:'双皮奶',icon:'🍮',hl:1},{name:'手工肠粉',icon:'🥟'},{name:'番茄虾滑煲',icon:'🍤'},{name:'腊味煲仔饭',icon:'🍚'}
+    ]
+  },
+  { type:'restaurant', icon:'🍚', name:'魏记小厨', branch:'佳林路店', tag:'本帮菜', tagClass:'tag-green',
+    photo:'images/shop_23.jpg',
+    price:69, recommender:'草', avatar:'草', dianping:'4.4',
+    addr:'浦东新区金桥镇佳林路157号（金高路与佳林路交叉口）',
+    mapQuery:'浦东新区佳林路157号魏记小厨',
+    features:['11:00-13:30 17:00-21:00','量大实惠','本帮菜'],
+    rating:4.5,
+    dishes:[
+      {name:'金汤大骨（招牌）',icon:'🍖',hl:1},{name:'本帮脆鳝',icon:'🐍',hl:1},{name:'椒盐排条',icon:'🍗'},{name:'山东炒活鸡锅仔',icon:'🍲'},{name:'西湖牛肉羹',icon:'🥣'}
+    ]
+  },
+  { type:'restaurant', icon:'🥢', name:'傅记小菜', branch:'佳林路店', tag:'徽菜', tagClass:'tag-green',
+    photo:'images/shop_24.jpg',
+    price:87, recommender:'Ln', avatar:'L', dianping:'4.6',
+    addr:'浦东新区金桥镇佳林路128号底层（魏记小厨斜对面）',
+    mapQuery:'浦东新区佳林路128号傅记小菜',
+    features:['10:00-23:00','徽菜本帮','有包厢'],
+    rating:4.5,
+    dishes:[
+      {name:'秘制酱油虾（招牌）',icon:'🦐',hl:1},{name:'黄山笋干炒腊肉',icon:'🥓',hl:1},{name:'招牌土鸡汤',icon:'🍲'},{name:'双色鱼头',icon:'🐟'},{name:'招牌腰果麻球',icon:'🍡'}
+    ]
+  },
+  { type:'restaurant', icon:'🍜', name:'木叔小面', branch:'佳林路店', tag:'重庆小面', tagClass:'tag-orange',
+    photo:'images/shop_26.jpg',
+    price:24, recommender:'Ln', avatar:'L', dianping:'4.3',
+    addr:'浦东新区金桥镇佳林路120号底层',
+    mapQuery:'浦东新区佳林路120号木叔小面',
+    features:['09:00-21:00','重庆风味','辣度可选'],
+    rating:4.5,
+    dishes:[
+      {name:'泡椒鸡杂面（招牌）',icon:'🌶️',hl:1},{name:'重庆小面',icon:'🍜',hl:1},{name:'牛肉面',icon:'🥩'},{name:'肥肠面',icon:'🍲'},{name:'番茄肉丸面',icon:'🍅'}
+    ]
+  },
+  { type:'category', icon:'🍰', name:'甜品', desc:'现烤出炉 甜到心坎里<br>面包甜点烘焙', count:'2家店' },
+  { type:'restaurant', icon:'🥐', name:'SOSO盐面包', branch:'吴江路店', tag:'盐面包', tagClass:'tag-cyan',
+    photo:'images/shop_19.jpg',
+    price:35, recommender:'TangT', avatar:'T', dianping:'4.4',
+    addr:'静安区吴江路198号',
+    mapQuery:'静安区吴江路198号SOSO盐面包',
+    features:['09:00-21:00','天然酵母','盐面包专门店'],
+    rating:5,
+    dishes:[
+      {name:'柠檬挞软盐面包（招牌）',icon:'🍋',hl:1},{name:'原味软盐面包',icon:'🥐',hl:1},{name:'布里欧盐面包',icon:'🧈'},{name:'明太子盐面包',icon:'🐟'},{name:'巧克力曲奇盐面包',icon:'🍪'}
+    ]
+  },
+  { type:'restaurant', icon:'🥖', name:'FOURNIL BAKERY', branch:'陆悦天地店', tag:'法式烘焙', tagClass:'tag-orange',
+    photo:'images/shop_20.jpg',
+    price:41, recommender:'TangT', avatar:'T', dianping:'4.3',
+    addr:'浦东新区张江镇中科路1717弄1-5号陆悦天地（木星）L1层M-L102',
+    mapQuery:'浦东新区中科路1717弄陆悦天地FOURNIL BAKERY',
+    features:['07:00-22:00','现烤现卖','法式烘焙'],
+    rating:5,
+    dishes:[
+      {name:'胡萝卜碱水球（招牌）',icon:'🥕',hl:1},{name:'开心果玫瑰可颂',icon:'🥐',hl:1},{name:'泰奶巴斯克',icon:'🍰'},{name:'咸奶油草莓泡芙',icon:'🍓'},{name:'黑加仑乳酪拿破仑',icon:'🫐'}
+    ]
+  },
+  // ===== 彩蛋卡 1（shop_28｜后台标识：上帝之手）=====
+  // · 卡面只显示图片，不带任何文字信息（店名仅作后台标识，界面不展示）
+  // · 不属于任何分类菜单 —— buildFiltered() 里已过滤掉 egg
+  // · 心仪版：滑动第 20 次后出现；随心版：随机第 5 次后出现
+  { type:'restaurant', icon:'🎁', name:'上帝之手', branch:'', tag:'', tagClass:'',
+    photo:'images/shop_28.jpg',
+    price:'', recommender:'', avatar:'', dianping:'',
+    addr:'', mapQuery:'',
+    features:[], rating:0, egg:'egg28',
+    dishes:[]
+  },
+  // ===== 彩蛋卡 2（shop_29）=====
+  // · 同上，只在操作次数达标时插入展示
+  // · 心仪版：滑动第 11 次后出现；随心版：随机第 11 次后出现
+  { type:'restaurant', icon:'🎁', name:'彩蛋', branch:'', tag:'', tagClass:'',
+    photo:'images/shop_29.jpg',
+    price:'', recommender:'', avatar:'', dianping:'',
+    addr:'', mapQuery:'',
+    features:[], rating:0, egg:'egg29',
+    dishes:[]
+  },
+  // ===== 彩蛋卡 3（shop_30）=====
+  // · 仅图片，无任何文字；不属于任何分类菜单
+  // · 出现频率低于前两张（心仪 26 / 随心 15）
+  { type:'restaurant', icon:'🎁', name:'彩蛋三', branch:'', tag:'', tagClass:'',
+    photo:'images/shop_30.jpg',
+    price:'', recommender:'', avatar:'', dianping:'',
+    addr:'', mapQuery:'',
+    features:[], rating:0, egg:'egg30',
+    dishes:[]
+  },
+  // ===== 彩蛋卡 4（shop_31）=====
+  // · 出现频率低于前两张（心仪 33 / 随心 21）
+  { type:'restaurant', icon:'🎁', name:'彩蛋四', branch:'', tag:'', tagClass:'',
+    photo:'images/shop_31.jpg',
+    price:'', recommender:'', avatar:'', dianping:'',
+    addr:'', mapQuery:'',
+    features:[], rating:0, egg:'egg31',
+    dishes:[]
+  }
+];
+
+// ===================== 彩蛋卡配置 =====================
+// key 与 slides 中卡片的 egg 字段对应
+// xinyi  = 心仪版「滑动」第 N 次后出现
+// suixin = 随心版「随机」第 N 次后出现
+// 命中后该彩蛋的计数器归零、重新开始计算；刷新/重开页面同样从 0 起算
+const EGGS = [
+  { key: 'egg28', xinyi: 20, suixin: 5  },
+  { key: 'egg29', xinyi: 11, suixin: 11 },
+  { key: 'egg30', xinyi: 26, suixin: 15 },   // 新增两张：出现频率低于前两张
+  { key: 'egg31', xinyi: 33, suixin: 21 }
+];
+
+// 为每张彩蛋卡建立独立状态
+const eggStates = EGGS.map(cfg => ({
+  cfg,
+  idx: slides.findIndex(s => s.egg === cfg.key),
+  xinyiCount: 0,
+  suixinCount: 0
+}));
+
+// >=0 时 render 强制展示该彩蛋卡（只是插入展示，不打乱正常卡片流）
+let eggOverride = -1;
+
+// 每次「滑动 / 随机」操作后调用；命中则返回该卡在 slides 中的索引，否则返回 -1
+function eggHit(mode) {
+  // 先给所有彩蛋各自递增，互不干扰 —— 否则先命中的那个 return 掉会让后面的漏计一次
+  const ready = [];
+  for (const st of eggStates) {
+    if (st.idx < 0) continue;
+    const limit = st.cfg[mode];
+    if (!limit) continue;
+    st[mode + 'Count']++;
+    if (st[mode + 'Count'] >= limit) ready.push(st);
+  }
+  if (!ready.length) return -1;
+  // 同一操作多个彩蛋同时达标时取配置靠前的一个，其余保留计数、顺延到下一次
+  const chosen = ready[0];
+  chosen[mode + 'Count'] = 0;   // 重置后重新计算
+  return chosen.idx;
+}
+
+// 每个 slide 所属分类（用于判断哪些分类不参与随机）
+const slideCategory = [];
+let _curCat = null;
+slides.forEach(s => {
+  if (s.type === 'category') _curCat = s.name;
+  slideCategory.push(_curCat);
+});
+
+// 不参与「随心版」随机抽取的分类
+const NO_RANDOM_CATS = ['甜品'];
+
+const restaurantIndices = [];       // 随机「结果」池：可含彩蛋卡（随机到了才显示）
+const spinOnlyIndices = [];         // 随机「滚动」池：只有真实餐厅，不含任何彩蛋卡
+slides.forEach((s, i) => {
+  if (s.type !== 'restaurant') return;
+  // egg 卡片无视 NO_RANDOM_CATS，强制参与随心版随机
+  const inRandom = s.egg || !NO_RANDOM_CATS.includes(slideCategory[i]);
+  if (inRandom) restaurantIndices.push(i);
+  if (inRandom && !s.egg) spinOnlyIndices.push(i);   // 滚动动画里不出现彩蛋卡
+});
+
+const featureIcons = {
+  '新鲜直达':'🚚','家庭聚餐':'👥','性价比高':'💰',
+  '09:30-24:00':'🕐','东北地名包厢':'🏠',
+  '无预制菜':'🍳','现点现烧':'🔥','上海地方菜好评榜':'🏆',
+  '10:00-02:00':'🕐','现场选肉现炒':'🔪','9店连锁':'🏪',
+  '牛骨慢熬原汤':'🍲','街边烟火小店':'🏚️','价格实惠':'💰',
+  '牛羊肉锅':'🥘','秘制羊棒骨':'🦴','龙虾烧烤':'🦞',
+  '大学生食堂':'🎓','曹路米其林':'⭐',
+  '17:00-02:00':'🕐','东北烧烤':'🍢','白酒免费':'🍶',
+  '09:00-24:00':'🕐','驴肉现做':'🫓','河间风味':'📍',
+  '24小时营业':'🕐','老店搬迁':'📦',
+  '休闲约会':'💕','网红打卡':'📸','免费停车':'🅿️',
+  '11:00-22:00':'🕐','螺蛳粉专营':'🍜','辣酱自选':'🌶️',
+  '10:30-21:30':'🕐','手工面食':'🤲','陕西风味':'🌾',
+  '现炒热菜':'🔥','湘菜下饭':'🍚',
+  '兰州牛肉面':'🍜','牛肉酱香':'🥩',
+  '09:00-20:00':'🕐',
+  '11:00-24:00':'🕐','猪杂现切':'🔪','潮汕风味':'📍',
+  '09:00-21:00':'🕐','天然酵母':'🌾','盐面包专门店':'🧂',
+  '07:00-22:00':'🕐','现烤现卖':'🔥','法式烘焙':'🥖',
+  '10:00-13:00 16:00-20:30':'🕐','皖豫土菜':'🏚️','汤鲜味浓':'🥣',
+  '10:00-22:00':'🕐','顺德风味':'🐔',
+  '11:00-13:30 17:00-21:00':'🕐','量大实惠':'🍚','本帮菜':'🏚️',
+  '10:00-23:00':'🕐','徽菜本帮':'🥢','有包厢':'🚪',
+  '09:00-21:00':'🕐','重庆风味':'🌶️','辣度可选':'🌡️',
+  '深夜营业':'🌙','铜锅涮肉':'🍲','现炒锅气':'🔥'
+};
+
+// 若网址带 ?egg=reset，则清零所有彩蛋计数（方便自己反复测试）
+try {
+  if (location.search.indexOf('egg=reset') > -1) {
+    eggStates.forEach(st => { st.xinyiCount = 0; st.suixinCount = 0; });
+  }
+} catch (e) {}
+
+// ===================== 分类映射 =====================
+const categoryMap = {};
+let currentCat = null;
+slides.forEach((s, i) => {
+  if (s.type === 'category') {
+    currentCat = s.name;
+    categoryMap[currentCat] = { catIdx: i, indices: [i], icon: s.icon };
+  } else if (currentCat) {
+    categoryMap[currentCat].indices.push(i);
+  }
+});
+
+// ===================== 过滤状态 =====================
+let currentCategory = '全部';
+let filteredSlides = [...slides];
+let filteredTotal = slides.length;
+let filteredRestaurantIndices = [...restaurantIndices];
+
+function buildFiltered(catName) {
+  if (catName === '全部') {
+    // 心仪版：过滤掉隐藏彩蛋卡（egg）
+    filteredSlides = slides.map((s, i) => ({ ...s, _origIdx: i })).filter(s => !s.egg);
+    filteredTotal = filteredSlides.length;
+    return filteredSlides.map(s => s._origIdx);
+  }
+  const map = categoryMap[catName];
+  if (!map) return [];
+  const indices = map.indices.filter(i => !slides[i].egg);
+  filteredSlides = indices.map(i => ({ ...slides[i], _origIdx: i }));
+  filteredTotal = indices.length;
+  return indices;
+}
+
+function rebuildRestaurantIndices() {
+  filteredRestaurantIndices = [];
+  filteredSlides.forEach((s, i) => {
+    if (s.type === 'restaurant') filteredRestaurantIndices.push(i);
+  });
+}
+
+// ===================== 分类面板 =====================
+(function initCatPanel() {
+  const trigger = document.getElementById('catTrigger');
+  const panel = document.getElementById('catPanel');
+
+  // 点击"目录" → 弹出分类面板
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    panel.classList.toggle('show');
+  });
+
+  // 点击面板外 → 收起
+  document.addEventListener('click', (e) => {
+    if (!panel.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
+      panel.classList.remove('show');
+    }
+  });
+})();
+
+function renderCatTabs() {
+  const panel = document.getElementById('catPanel');
+  const cats = ['全部', ...Object.keys(categoryMap)];
+  panel.innerHTML = cats.map((cat, i) => {
+    const isActive = cat === currentCategory;
+    const sep = i > 0 ? '<span class="cat-sep">|</span>' : '';
+    return `${sep}<span class="cat-tag${isActive ? ' active' : ''}" data-cat="${cat}">${cat}</span>`;
+  }).join('');
+
+  panel.querySelectorAll('.cat-tag').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cat = tag.dataset.cat;
+      if (cat === currentCategory) { panel.classList.remove('show'); return; }
+      currentCategory = cat;
+      buildFiltered(cat);
+      rebuildRestaurantIndices();
+      idx = 0;
+      render(true);
+      renderCatTabs();
+      panel.classList.remove('show');
+    });
+  });
+}
+
+// ===================== 状态 =====================
+let mode = 'xinyi';
+let idx = 0;
+let randomCount = 0;
+let isSpinning = false;
+const total = slides.filter(s => !s.egg).length;  // 不含隐藏彩蛋卡
+const card = document.getElementById('card');
+const stageEl = document.getElementById('stage');
+const actionsBar = document.getElementById('actionsBar');
+const btnNav = document.getElementById('btnNav');
+const diceBtn = document.getElementById('diceBtn');
+const toast = document.getElementById('toast');
+
+// ===================== Splash（2秒后渐隐） =====================
+(function initSplash() {
+  const phrases = [
+    '呦~你也是吃货？',
+    '万水千山总是情，这顿不吃很难行！',
+    '组队吗？',
+    '我们一直在追寻路上！',
+    'V me fifty yuan gogoooo!',
+    'xinQQQingdahao\n心情大好❤',
+    '永远都像初次见你那样\n使我心荡漾！',
+    '有人被命运安排\n而我安排命运！',  // 《秦时明月》卫庄（原句：很多人被命运安排，而我安排命运）
+    '愿我们一直健康！'
+  ];
+  const splashEl = document.getElementById('splash');
+  const splashText = document.getElementById('splashText');
+  splashText.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+  // 2秒后渐隐
+  setTimeout(() => {
+    splashEl.classList.add('hide');
+    // 动画结束后移除元素
+    setTimeout(() => { splashEl.remove(); }, 500);
+  }, 2000);
+})();
+
+// ===================== 提示语 =====================
+function showToast(msg, duration = 2000) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  if (duration > 0) {
+    toast._timer = setTimeout(() => toast.classList.remove('show'), duration);
+  }
+}
+function hideToast() {
+  toast.classList.remove('show');
+}
+
+// ===================== 渲染 =====================
+function render(instant = false) {
+  const s = eggOverride >= 0 ? slides[eggOverride]
+          : (mode === 'suixin' ? slides[idx] : filteredSlides[idx]);
+  if (!s) return;
+
+  if (s.type === 'category') {
+    card.className = 'card card-category';
+    if (!instant) card.classList.add('hidden');
+    card.offsetHeight;
+    card.innerHTML = `
+      <div class="cat-bg">
+        <div class="cat-emoji">${s.icon}</div>
+        <div class="cat-name">${s.name}</div>
+        <div class="cat-desc">${s.desc}</div>
+        <div class="cat-count">— ${s.count} —</div>
+      </div>
+    `;
+  } else if (s.egg) {
+    // 彩蛋卡：整卡只有一张图，不渲染任何文字信息
+    card.className = 'card card-restaurant card-egg';
+    if (!instant) card.classList.add('hidden');
+    card.offsetHeight;
+    card.innerHTML = `
+      <img class="shop-photo egg-photo" src="${s.photo}" alt="" decoding="async">
+    `;
+  } else {
+    const dishesHTML = s.dishes.map(d =>
+      `<span class="dish${d.hl ? ' hot' : ''}">${d.icon || ''}${d.name}</span>`
+    ).join('');
+    const featHTML = s.features.map(f =>
+      `<span class="shop-feat">${featureIcons[f] || ''} ${f}</span>`
+    ).join('');
+    const photoHTML = s.photo
+      ? `<img class="shop-photo" src="${s.photo}" alt="${s.name}" decoding="async" onerror="this.style.display='none'">`
+      : '';
+    card.className = 'card card-restaurant';
+    if (!instant) card.classList.add('hidden');
+    card.offsetHeight;
+    card.innerHTML = `
+      ${photoHTML}
+      <div class="shop-body">
+        <div class="shop-header">
+          <div class="shop-name">
+            ${s.name} <span class="branch">(${s.branch})</span>
+            <span class="tag ${s.tagClass}">${s.tag}</span>
+          </div>
+          <div class="shop-price">¥${s.price}<span>/人</span></div>
+        </div>
+        <div class="shop-rating">${'⭐'.repeat(Math.floor(s.rating || 0))}${(s.rating || 0) % 1 >= 0.5 ? '✨' : ''}</div>
+        <div class="shop-recommender">
+          <span class="avt">${s.avatar}</span> ${s.recommender} 推荐
+        </div>
+        <div class="shop-features">${featHTML}</div>
+        <div class="shop-addr">📍 ${s.addr}</div>
+        <div class="shop-meta">
+          <span><span class="recdish-icon">🍴</span> <span class="recdish-label">推荐菜</span></span>
+          ${s.douyin ? `<span class="meta-sep">|</span><span><span class="dy-icon">🎵</span> 抖音<span class="dy-score">${s.douyin}</span></span>` : ''}
+          ${s.dianping ? `<span class="meta-sep">|</span><span><span class="dp-icon">🍊</span> 大众点评<span class="dp-score">${s.dianping}</span></span>` : ''}
+        </div>
+        <div class="shop-dishes">${dishesHTML}</div>
+      </div>
+    `;
+  }
+
+  if (!instant) {
+    requestAnimationFrame(() => {
+      card.classList.remove('hidden');
+      card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+    });
+  }
+  // 兜底：彩蛋展示时清掉任何残留位移（若触发发生在手势拖拽中途，会留下 translateX）
+  if (eggOverride >= 0) card.style.transform = '';
+
+  updateComments(s);   // 切换卡片时刷新该店评论弹幕
+
+  // 导航按钮：仅正常餐厅卡显示，彩蛋卡/分类卡隐藏
+  btnNav.style.display = (mode === 'xinyi' && s.type === 'restaurant' && !s.egg) ? '' : 'none';
+
+  hideToast();
+  preloadAround();
+}
+
+// ===================== 图片预加载 =====================
+// 提前下载后面 2 张卡片的图片，切换时不再等待网络
+const imgCache = {};
+function preloadPhoto(src) {
+  if (!src || imgCache[src]) return;
+  imgCache[src] = true;
+  const im = new Image();
+  im.src = src;
+}
+function preloadAround() {
+  const list = mode === 'suixin' ? slides : filteredSlides;
+  [idx + 1, idx + 2].forEach(i => {
+    const s = list[i];
+    if (s && s.photo) preloadPhoto(s.photo);
+  });
+}
+
+// ===================== 导航（心仪版） =====================
+function goTo(newIdx, dir = 0) {
+  if (newIdx === idx || isSpinning) return;
+  card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+  card.style.opacity = '0';
+  card.style.transform = `scale(0.96) translateX(${dir * 30}px)`;
+
+  setTimeout(() => {
+    idx = newIdx;
+    card.style.transition = 'none';
+    card.style.opacity = '0';
+    card.style.transform = `scale(0.96) translateX(${-dir * 30}px)`;
+    render(true);
+    card.offsetHeight;
+    requestAnimationFrame(() => {
+      card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+      card.style.opacity = '1';
+      card.style.transform = '';
+      setTimeout(() => { card.style.transition = ''; }, 400);
+    });
+  }, 260);
+}
+
+// 彩蛋卡展示：先淡出当前卡（同时清掉手势拖拽残留的位移），再淡入彩蛋卡
+// 不能直接 render(true) —— 那样拖拽中的 translateX 会残留，卡片会停在偏移位置
+function showEgg(eggIdx) {
+  eggOverride = eggIdx;
+  card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+  card.style.opacity = '0';
+  card.style.transform = '';
+  setTimeout(() => {
+    render(true);
+    card.offsetHeight;
+    requestAnimationFrame(() => {
+      card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+      card.style.opacity = '1';
+      card.style.transform = '';
+      setTimeout(() => { card.style.transition = ''; }, 400);
+    });
+  }, 250);
+}
+
+function goNext() {
+  if (mode !== 'xinyi') return;
+  // 当前正停在彩蛋卡上 → 滑走，回到正常卡片流
+  if (eggOverride >= 0) { eggOverride = -1; goTo((idx + 1) % filteredTotal, 1); return; }
+  // 心仪版「滑动」计数，达到该彩蛋阈值则插入展示
+  const hit = eggHit('xinyi');
+  if (hit >= 0) { showEgg(hit); }
+  else goTo((idx + 1) % filteredTotal, 1);
+}
+function goPrev() {
+  if (mode !== 'xinyi') return;
+  if (eggOverride >= 0) { eggOverride = -1; goTo((idx - 1 + filteredTotal) % filteredTotal, -1); return; }
+  const hit = eggHit('xinyi');
+  if (hit >= 0) { showEgg(hit); }
+  else goTo((idx - 1 + filteredTotal) % filteredTotal, -1);
+}
+
+// ===================== 随机模式 =====================
+function randomSpin() {
+  if (isSpinning) return;
+  isSpinning = true;
+  hideToast();
+
+  // 骰子立即消失
+  diceBtn.classList.remove('show');
+  diceBtn.classList.remove('below');
+
+  // 显示卡片
+  card.classList.remove('no-card');
+  card.classList.remove('hidden');
+  card.style.opacity = '1';
+  card.style.transform = '';
+  card.style.transition = 'none';
+
+  const duration = 1800;
+  const interval = 70;
+  const steps = Math.floor(duration / interval);
+  let step = 0;
+
+  const spinTimer = setInterval(() => {
+    step++;
+    // 滚动过程只看真实餐厅 —— 彩蛋卡不参与「快速筛选」的视觉过程
+    const pool = spinOnlyIndices.length ? spinOnlyIndices : restaurantIndices;
+    idx = pool[Math.floor(Math.random() * pool.length)];
+    render(true);
+    card.style.transition = 'none';
+    card.style.opacity = '1';
+    card.style.transform = '';
+
+    if (step >= steps) {
+      clearInterval(spinTimer);
+
+      // 随心版：达到该彩蛋的随机次数阈值 → 强制锁定为它，否则正常随机
+      const hit = eggHit('suixin');
+      const finalIdx = hit >= 0
+        ? hit
+        : restaurantIndices[Math.floor(Math.random() * restaurantIndices.length)];
+
+      eggOverride = -1;   // 随机结果以 idx 为准
+      idx = finalIdx;
+      render(true);
+      card.style.opacity = '1';
+      card.style.transform = '';
+      card.style.transition = 'none';
+      card.offsetHeight;
+
+      // 左滑快消失 → 弹回来定格
+      requestAnimationFrame(() => {
+        card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+        card.style.opacity = '0.15';
+        card.style.transform = 'translateX(-80px) scale(0.92)';
+
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.5s cubic-bezier(0.34,1.56,0.64,1), transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
+          card.style.opacity = '1';
+          card.style.transform = '';
+
+          randomCount++;
+          if (randomCount >= 3) {
+            showToast('好难选啊~', 0);
+          } else {
+            showToast('我中意你啦！', 0);
+          }
+
+          // 骰子移到卡片下方并重新显示
+          diceBtn.classList.add('below', 'show');
+
+          setTimeout(() => {
+            isSpinning = false;
+            card.style.transition = '';
+          }, 500);
+        }, 350);
+      });
+    }
+  }, interval);
+}
+
+// ===================== 触屏（心仪版） =====================
+let startX = 0, dx = 0, dragging = false;
+
+card.addEventListener('touchstart', e => {
+  if (mode === 'suixin' || isSpinning) return;
+  startX = e.touches[0].clientX; dx = 0; dragging = true;
+  card.classList.add('swiping');
+}, {passive: true});
+
+card.addEventListener('touchmove', e => {
+  if (!dragging) return;
+  dx = e.touches[0].clientX - startX;
+  const limit = 0.5;
+  const clamped = Math.max(-card.offsetWidth * limit, Math.min(card.offsetWidth * limit, dx)) / (card.offsetWidth * limit);
+  card.style.transform = `translateX(${clamped * 40}px) scale(${1 - Math.abs(clamped) * 0.04})`;
+  card.style.opacity = 1 - Math.abs(clamped) * 0.5;
+}, {passive: true});
+
+card.addEventListener('touchend', () => {
+  if (!dragging) return;
+  dragging = false;
+  card.classList.remove('swiping');
+  if (dx < -50) goNext();
+  else if (dx > 50) goPrev();
+  else {
+    card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    card.style.opacity = '1'; card.style.transform = '';
+    setTimeout(() => { card.style.transition = ''; }, 300);
+  }
+});
+
+// 鼠标
+card.addEventListener('mousedown', e => {
+  if (mode === 'suixin' || isSpinning) return;
+  e.preventDefault(); startX = e.clientX; dx = 0; dragging = true;
+  card.classList.add('swiping');
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  dx = e.clientX - startX;
+  const w = card.offsetWidth;
+  const clamped = Math.max(-w * 0.5, Math.min(w * 0.5, dx)) / (w * 0.5);
+  card.style.transform = `translateX(${clamped * 40}px) scale(${1 - Math.abs(clamped) * 0.04})`;
+  card.style.opacity = 1 - Math.abs(clamped) * 0.5;
+});
+window.addEventListener('mouseup', () => {
+  if (!dragging) return;
+  dragging = false;
+  card.classList.remove('swiping');
+  if (dx < -50) goNext();
+  else if (dx > 50) goPrev();
+  else {
+    card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    card.style.opacity = '1'; card.style.transform = '';
+    setTimeout(() => { card.style.transition = ''; }, 300);
+  }
+});
+
+// ===================== 模式切换 =====================
+function switchMode(newMode) {
+  if (newMode === mode || isSpinning) return;
+  mode = newMode;
+  randomCount = 0;
+  eggOverride = -1;   // 切模式时清掉彩蛋展示态
+  hideToast();
+
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+
+  // 随心版整块关闭评论与弹幕（含从心仪版带过来的残留）
+  stageEl.classList.toggle('suixin', mode === 'suixin');
+
+  if (mode === 'suixin') {
+    card.classList.add('no-card');
+    card.classList.remove('hidden');
+    card.style.opacity = '';
+    card.style.transform = '';
+    card.style.transition = '';
+    actionsBar.classList.add('hidden');
+    stageEl.classList.add('full');
+    diceBtn.classList.add('show');
+    diceBtn.classList.remove('below');
+    updateComments(null);   // 清空评论状态、停掉还在飘的弹幕
+  } else {
+    card.classList.remove('no-card');
+    actionsBar.classList.remove('hidden');
+    stageEl.classList.remove('full');
+    diceBtn.classList.remove('show');
+    diceBtn.classList.remove('below');
+    idx = 0;
+    render(true);
+    card.style.opacity = '1';
+    card.style.transition = '';
+  }
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+});
+
+// ===================== 按钮 =====================
+diceBtn.addEventListener('click', randomSpin);
+
+btnNav.addEventListener('click', () => {
+  if (mode === 'xinyi') {
+    const s = filteredSlides[idx];
+    if (s.type === 'restaurant') {
+      window.open(`https://www.amap.com/search?query=${encodeURIComponent(s.mapQuery)}`, '_blank');
+    }
+  }
+});
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  alert('🍽️ SHY此生必打卡餐厅\n共 ' + total + ' 张卡片\n心仪版：左右滑动浏览\n随心版：点击随机帮你选');
+});
+
+// ===================== 评论弹幕 =====================
+// 后端双通道：Supabase（优先）/ 腾讯云 CloudBase（备胎），谁的配置填了用谁；都没填走「仅本机」
+// 网络失败自动静默降级本机，任何情况都不影响滑卡手感
+const SUPA_URL = 'https://hvzkjstnfkygmyomlliu.supabase.co';   // Supabase Project URL（韩国节点）
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2emtqc3RuZmt5Z215b21sbGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NTUxMDAsImV4cCI6MjEwODQzMTEwMH0.agPjMqEK4_pK4s5xwgxeA8DuCWhg224F6fNdSPN6cb4';   // anon public key（受 RLS 保护，可以放前端）
+const SUPA_SHOP_COL = 'shop';   // Supabase 表里的店铺列名（这项目是 shop）
+const CB_ENV  = 'shy-daka-d5gfwas3b78af6750';   // 云开发环境 ID（免费版缺安全域名白名单，暂不可用）
+const CB_TABLE = 'comments';
+const CB_HOST = CB_ENV + '.api.tcloudbasegateway.com';
+const CLOUD_MODE = (SUPA_URL && SUPA_KEY) ? 'supa'
+                 : (CB_ENV.charAt(0) !== '_' ? 'cb' : '');
+const SHARED_ON = !!CLOUD_MODE;
+const COMMENTS_ON = true;
+
+const cmtBar   = document.getElementById('cmtBar');
+const cmtInput = document.getElementById('cmtInput');
+const cmtSend  = document.getElementById('cmtSend');
+const danmuTrack = document.getElementById('danmuTrack');
+
+if (cmtInput && !SHARED_ON) cmtInput.placeholder = '说点什么…（仅自己可见）';
+
+// 测试/垃圾评论识别：含「自检」二字一律丢弃（联调遗留数据，云端删不掉只能前端屏蔽）
+function isJunkText(s) { return /自检/.test(String(s || '')); }
+
+// 一次性自愈：清掉本机缓存里的测试评论（v1 / v2 两个 key 都清）
+// （这里直接用字面量 key，避免引用后面才声明的常量）
+(function purgeTestData() {
+  try {
+    ['shy_comments_v1', 'shy_comments_v2'].forEach(function (KEY) {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      const all = JSON.parse(raw);
+      let changed = false;
+      Object.keys(all).forEach(function (k) {
+        const arr = all[k] || [];
+        const kept = arr.filter(function (c) { return !isJunkText(c && c.text); });
+        if (kept.length !== arr.length) { all[k] = kept; changed = true; }
+      });
+      if (changed) localStorage.setItem(KEY, JSON.stringify(all));
+    });
+  } catch (e) {}
+})();
+
+const commentCache = {};   // { shopKey: [{text, nick}] }
+let curShopKey = '';
+const DANMU_GAP = 2;    // 相邻两条弹幕之间的额外间隔（秒）
+const DANMU_ROWS = 3;   // 并行轨道行数
+const DANMU_ROW_H = 18; // 单行高度（px，需与 CSS .danmu-track 高度一致：3×18=54）
+let danmuLoop = [];     // 当前餐厅的循环播放列表，飘完一轮从头再来
+let danmuIdx = 0;       // 播到第几条
+let danmuTimer = null;
+let laneFree = [0, 0, 0];   // 每条轨道何时空出来（时间戳 ms）
+
+// 餐厅标识：用图片编号（shop_21），彩蛋卡/分类卡不参与评论
+function shopKeyOf(s) {
+  if (!s || s.type !== 'restaurant' || s.egg) return '';
+  const m = (s.photo || '').match(/shop_\d+/);
+  return m ? m[0] : s.name;
+}
+
+function myNick() {
+  let n = '';
+  try { n = localStorage.getItem('shy_nick') || ''; } catch (e) {}
+  if (!n) {
+    n = '食客' + Math.floor(1000 + Math.random() * 9000);
+    try { localStorage.setItem('shy_nick', n); } catch (e) {}
+  }
+  return n;
+}
+
+const LS_KEY = 'shy_comments_v2';
+
+// 本机存储：{ shopKey: [{t, text}] }  —— 永远可用，断网也能看
+function localAll() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch (e) { return {}; }
+}
+function localSave(all) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(all)); } catch (e) {}
+}
+function dedupeKey(c) { return String(c.t || 0) + '|' + c.text; }
+
+// ---------- CloudBase：匿名登录拿 token（缓存在 sessionStorage） ----------
+function deviceId() {
+  let id = '';
+  try { id = localStorage.getItem('shy_device_id') || ''; } catch (e) {}
+  if (!id) {
+    id = 'dev-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem('shy_device_id', id); } catch (e) {}
+  }
+  return id;
+}
+let cbToken = '', cbTokenExp = 0;
+async function cbAccessToken() {
+  if (cbToken && Date.now() < cbTokenExp) return cbToken;
+  try {
+    const t = sessionStorage.getItem('cb_token') || '';
+    const e = parseInt(sessionStorage.getItem('cb_token_exp') || '0', 10);
+    if (t && Date.now() < e) { cbToken = t; cbTokenExp = e; return t; }
+  } catch (e) {}
+  const r = await fetch('https://' + CB_HOST + '/auth/v1/signin/anonymously', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Device-Id': deviceId() },
+    body: '{}'
+  });
+  if (!r.ok) throw new Error('anon signin ' + r.status);
+  const j = await r.json();
+  cbToken = j.access_token || '';
+  cbTokenExp = Date.now() + Math.max(60, (parseInt(j.expires_in, 10) || 3600) - 120) * 1000;
+  try {
+    sessionStorage.setItem('cb_token', cbToken);
+    sessionStorage.setItem('cb_token_exp', String(cbTokenExp));
+  } catch (e) {}
+  return cbToken;
+}
+
+// 云端读取（后台调用，失败就静默降级本机）
+async function cloudFetchComments(key) {
+  if (CLOUD_MODE === 'supa') {
+    const qs = 'select=text,created_at'
+      + '&' + SUPA_SHOP_COL + '=eq.' + encodeURIComponent(key)
+      + '&order=created_at.desc&limit=40';
+    const r = await fetch(SUPA_URL + '/rest/v1/comments?' + qs, {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Accept': 'application/json' }
+    });
+    if (!r.ok) throw new Error('supa read ' + r.status);
+    return await r.json();
+  }
+  const token = await cbAccessToken();
+  const qs = 'select=text,created_at'
+    + '&shop_key=eq.' + encodeURIComponent(key)
+    + '&order=created_at.desc'
+    + '&limit=40';
+  const r = await fetch('https://' + CB_HOST + '/v1/rdb/rest/' + CB_TABLE + '?' + qs, {
+    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+  });
+  if (!r.ok) throw new Error('cloud read ' + r.status);
+  return await r.json();
+}
+
+// 云端写入（后台调用，失败不影响本地弹幕）
+async function cloudPostComment(key, text) {
+  if (CLOUD_MODE === 'supa') {
+    const body = { text: text };
+    body[SUPA_SHOP_COL] = key;
+    const r = await fetch(SUPA_URL + '/rest/v1/comments', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error('supa write ' + r.status);
+    return;
+  }
+  const token = await cbAccessToken();
+  const r = await fetch('https://' + CB_HOST + '/v1/rdb/rest/' + CB_TABLE, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({ shop_key: key, text: text })
+  });
+  if (!r.ok) throw new Error('cloud write ' + r.status);
+}
+
+// 本机优先：先给本机数据，云端在后台补
+async function fetchComments(key) {
+  if (!key) return [];
+  // 最后一道防线：本机数据里若混进测试评论，读的时候就剔掉
+  return (localAll()[key] || []).filter(function (c) { return c && c.text && !isJunkText(c.text); });
+}
+
+// 后台合并云端评论：只把本机没有的追加进队列
+async function cloudSync(key) {
+  if (!SHARED_ON || !key) return;
+  try {
+    const rows = await cloudFetchComments(key);
+    if (!Array.isArray(rows) || !rows.length) return;
+    const fresh = rows.map(function (row) {
+      return { t: row.created_at ? Math.floor(new Date(row.created_at).getTime() / 1000) : 0, text: row.text || '' };
+    }).filter(function (c) {
+      // 过滤空内容，以及联调遗留的测试数据（云端那条 anon 无 DELETE 权限，只能前端屏蔽）
+      return c.text && !isJunkText(c.text);
+    });
+    const cur = commentCache[key] || [];
+    const known = {};
+    cur.forEach(function (c) { known[dedupeKey(c)] = 1; });
+    const add = fresh.filter(function (c) { return !known[dedupeKey(c)]; });
+    if (!add.length) return;
+    commentCache[key] = cur.concat(add);
+    // 云端数据写回本机，下次断网也能看
+    const all = localAll();
+    const merged = (all[key] || []).concat(add);
+    const seen = {}, uniq = [];
+    merged.forEach(function (c) { const k = dedupeKey(c); if (!seen[k]) { seen[k] = 1; uniq.push(c); } });
+    all[key] = uniq;
+    localSave(all);
+    if (curShopKey !== key) return;
+    // 云端补来的评论追加进循环列表（去重后），下一轮就能飘到
+    const known2 = {};
+    danmuLoop.forEach(function (c) { known2[dedupeKey(c)] = 1; });
+    danmuLoop = danmuLoop.concat(add.filter(function (c) { return !known2[dedupeKey(c)]; }).slice(0, 20));
+    if (!danmuTimer) danmuStep();   // 调度器停了（此前列表为空）就重启
+  } catch (e) {
+    // 网络慢/失败：什么都不做，继续用本机数据
+  }
+}
+
+// 发送：先落本机 + 立刻飘，云端后台补
+async function postComment(key, text) {
+  const item = { t: Math.floor(Date.now() / 1000), text: text };
+  const all = localAll();
+  (all[key] = all[key] || []).push(item);
+  localSave(all);
+  if (!SHARED_ON) return;
+  cloudPostComment(key, text).catch(function () {});
+}
+
+// 正在屏幕上飘的弹幕：{ key, endAt } —— 用于保证同一条评论同时只出现一次
+let danmuActive = [];
+function danmuOnScreen(key) {
+  return danmuActive.some(function (a) { return a.key === key; });
+}
+function danmuEarliestEnd() {
+  let m = Infinity;
+  danmuActive.forEach(function (a) { m = Math.min(m, a.endAt); });
+  return m;
+}
+
+// 发射一条弹幕（textContent 插入，避免 XSS）；不显示昵称；row 为轨道行号（0 起）
+function fireDanmu(text, row, key) {
+  const el = document.createElement('div');
+  el.className = 'danmu-item';
+  el.textContent = text;
+  el.style.top = (row * DANMU_ROW_H) + 'px';
+  const dur = Math.max(9, Math.min(18, 9 + text.length * 0.3));
+  el.style.animationDuration = dur + 's';
+  const rec = { key: key == null ? 'k:' + text : key, endAt: Date.now() + dur * 1000 };
+  danmuActive.push(rec);
+  el.addEventListener('animationend', function () {
+    el.remove();
+    danmuActive = danmuActive.filter(function (a) { return a !== rec; });
+  });
+  danmuTrack.appendChild(el);
+  return dur;
+}
+
+function stopDanmuLoop() {
+  if (danmuTimer) { clearTimeout(danmuTimer); danmuTimer = null; }
+}
+
+// 挑一条当前空闲的轨道（随机），装满则返回 -1
+function pickFreeLane() {
+  const now = Date.now();
+  const free = [];
+  for (let i = 0; i < DANMU_ROWS; i++) {
+    if (laneFree[i] <= now) free.push(i);
+  }
+  if (!free.length) return -1;
+  return free[Math.floor(Math.random() * free.length)];
+}
+
+// 立刻发射一条（占用一条空闲轨道），返回时长；没有空闲轨道返回 0
+function fireNow(item) {
+  const lane = pickFreeLane();
+  if (lane < 0) return 0;
+  const dur = fireDanmu(item.text, lane, dedupeKey(item));
+  laneFree[lane] = Date.now() + dur * 1000;
+  return dur;
+}
+
+// 排下一条：每 DANMU_GAP 秒放一条，随机落到空闲轨道
+// 关键：同一条评论在屏幕上没飘完就不重复发射（评论少时也不会三行都是同一条）
+function danmuStep() {
+  stopDanmuLoop();
+  if (!danmuLoop.length) return;
+  const now = Date.now();
+  // 挑一条「当前不在屏幕上」的评论
+  let pick = -1;
+  for (let i = 0; i < danmuLoop.length; i++) {
+    const idx = (danmuIdx + i) % danmuLoop.length;
+    if (!danmuOnScreen(dedupeKey(danmuLoop[idx]))) { pick = idx; break; }
+  }
+  if (pick < 0) {
+    // 列��里的评论全都还在屏幕上：等最早那条飘完再重新挑
+    const t = danmuEarliestEnd();
+    danmuTimer = setTimeout(danmuStep, Math.max(400, (isFinite(t) ? t : now) - now + 200));
+    return;
+  }
+  danmuIdx = pick + 1;
+  if (!fireNow(danmuLoop[pick])) {
+    // 三条轨道都占着：等最早空出来
+    let soonest = Infinity;
+    for (let i = 0; i < DANMU_ROWS; i++) soonest = Math.min(soonest, laneFree[i]);
+    danmuTimer = setTimeout(danmuStep, Math.max(300, soonest - now + 150));
+    return;
+  }
+  danmuTimer = setTimeout(danmuStep, DANMU_GAP * 1000);
+}
+
+// 当前屏幕上是否已有弹幕在飘
+function danmuBusy() { return danmuTrack.children.length > 0; }
+
+// 切换卡片时刷新该店的评论
+async function updateComments(s) {
+  // 随心版：全程不展示评论区与弹幕 —— 顺手把从心仪版带过来的残留清干净
+  if (!COMMENTS_ON || mode !== 'xinyi') {
+    cmtBar.style.visibility = 'hidden';
+    curShopKey = '';
+    stopDanmuLoop();
+    danmuTrack.innerHTML = '';
+    laneFree = laneFree.map(() => 0);
+    danmuActive = [];
+    danmuLoop = [];
+    danmuIdx = 0;
+    return;
+  }
+  const key = shopKeyOf(s);
+  cmtBar.style.visibility = key ? 'visible' : 'hidden';
+  if (key === curShopKey) return;
+  curShopKey = key;
+  stopDanmuLoop();
+  danmuTrack.innerHTML = '';
+  laneFree = [0, 0, 0];              // 换店：三条轨道全部释放
+  danmuActive = [];                  // 屏幕上的弹幕一并清空
+  if (!key) { danmuLoop = []; danmuIdx = 0; return; }
+  if (!(key in commentCache)) commentCache[key] = await fetchComments(key);
+  danmuLoop = (commentCache[key] || [])
+    .filter(function (c) { return c && c.text && !isJunkText(c.text); })
+    .slice(0, 30).reverse();         // 由旧到新
+  danmuIdx = 0;
+  danmuStep();
+  cloudSync(key);   // 后台补云端，不会拖慢滑卡
+}
+
+async function sendComment() {
+  const text = cmtInput.value.trim();
+  if (!text) return;
+  if (!COMMENTS_ON) { showToast('评论功能未开启'); return; }
+  if (!curShopKey) { showToast('先选一家餐厅吧'); return; }
+  cmtSend.disabled = true;
+  try {
+    await postComment(curShopKey, text);
+    cmtInput.value = '';
+    const item = { t: Math.floor(Date.now() / 1000), text: text };
+    commentCache[curShopKey] = (commentCache[curShopKey] || []).concat([item]);
+    // 立刻飘当前这条（随机落空闲轨道），同时加入循环列表，之后跟着再飘
+    danmuLoop.push(item);
+    // 这条已经在屏幕上飘着就不再发第二次
+    const dur = danmuOnScreen(dedupeKey(item)) ? 0 : fireNow(item);
+    if (dur) {
+      stopDanmuLoop();
+      danmuTimer = setTimeout(danmuStep, DANMU_GAP * 1000);
+    } else if (!danmuTimer) {
+      // 三条轨道都占着：交给调度器排队，等空出一条就轮到它
+      danmuTimer = setTimeout(danmuStep, 500);
+    }
+    showToast('已发射 🚀');
+  } catch (e) {
+    showToast('发送失败，稍后再试');
+  }
+  cmtSend.disabled = false;
+}
+
+cmtSend.addEventListener('click', sendComment);
+cmtInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendComment(); });
+
+// ===== Service Worker =====
+// 目的：满足 PWA「可安装」条件，让 Edge/Chrome 出现「安装」选项 → 生成无浏览器角标的独立桌面图标
+// 策略为网络优先 + 离线回落（sw.js 内实现），不会缓存旧版本
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();   // 每次打开都主动检查一次 sw 是否有更新
+      const sw = reg.waiting || reg.installing;
+      if (!sw) return;
+      // 新 sw 安装完成 → 静默刷新一次，确保拿到最新的 index.html（每会话仅一次，防循环）
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          const KEY = 'sw_reload_v4';
+          if (!sessionStorage.getItem(KEY)) {
+            sessionStorage.setItem(KEY, '1');
+            location.reload();
+          }
+        }
+      });
+    }).catch(() => {});
+  });
+}
+
+// ===================== 启动 =====================
+renderCatTabs();
+render(true);
+</script>
+</body>
+</html>
